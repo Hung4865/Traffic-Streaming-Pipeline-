@@ -1,0 +1,65 @@
+services:
+  jobmanager:
+    build:
+      context: .
+      dockerfile: jobmanager/Dockerfile
+    container_name: flink-jobmanager
+    ports:
+      - 8081:8081
+    command: jobmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        parallelism.default: 1
+        jobmanager.memory.process.size: 1024m
+        taskmanager.numberOfTaskSlots: 1
+    volumes:
+      - ./flink_processor.py:/opt/flink/flink_processor.py
+    mem_limit: 1200m
+    cpus: 1.50
+    networks:
+      - smart-highway-net
+
+  taskmanager:
+    build:
+      context: .
+      dockerfile: jobmanager/Dockerfile
+    container_name: flink-taskmanager
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        parallelism.default: 1
+        taskmanager.numberOfTaskSlots: 1
+        taskmanager.memory.process.size: 1024m
+    mem_limit: 1400m
+    cpus: 2.00
+    networks:
+      - smart-highway-net
+
+  frame-processor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: frame-processor
+    depends_on:
+      - jobmanager
+    env_file:
+      - ./.env
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      KAFKA_INPUT_TOPIC: ${KAFKA_INPUT_TOPIC}
+      KAFKA_OUTPUT_TOPIC: ${KAFKA_OUTPUT_TOPIC}
+      KAFKA_GROUP_ID: ${KAFKA_GROUP_ID}
+    mem_limit: 1600m
+    cpus: 2.00
+    networks:
+      - smart-highway-net
+
+networks:
+  smart-highway-net:
+    external: true
