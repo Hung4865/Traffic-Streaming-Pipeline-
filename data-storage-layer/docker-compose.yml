@@ -1,0 +1,61 @@
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    env_file:
+      - .env
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DB}
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - smart-highway-net
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    env_file:
+      - .env
+    restart: always
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address :9001
+    networks:
+      - smart-highway-net
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: timescaledb
+    env_file:
+      - .env
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - timescale_data:/var/lib/postgresql/data
+    networks:
+      - smart-highway-net
+
+volumes:
+  mongo_data:
+  minio_data:
+  timescale_data:
+
+networks:
+  smart-highway-net:
+    external: true
